@@ -1,196 +1,419 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>تسجيل دخول الأدمن - بوابة الطلاب</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root{
-  --primary:#4f46e5; --primary-light:#818cf8; --primary-dark:#3730a3;
-  --secondary:#0ea5e9; --success:#10b981; --danger:#ef4444; --warn:#f59e0b;
-  --bg:#f8fafc; --bg-card:#ffffff; --text:#0f172a; --text-secondary:#64748b; --text-light:#94a3b8;
-  --border:#e2e8f0; --shadow-lg:0 10px 40px rgba(0,0,0,.12); --shadow-sm:0 2px 10px rgba(0,0,0,.06);
-  --radius-sm:8px; --radius-md:14px; --radius-lg:24px;
-  --transition:all .25s cubic-bezier(.4,0,.2,1);
-  --font-family:'Cairo','Inter',sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:var(--font-family);
-  background:linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 45%, var(--secondary) 100%);
-  color:var(--text);
-  min-height:100vh;
-  display:flex; align-items:center; justify-content:center;
-  padding:20px;
-}
-#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px;}
-.spinner{width:44px;height:44px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>تسجيل دخول الأدمن - بوابة الطلاب</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+    <style>
+        /* ===== نفس ألوان الموقع الرئيسية ===== */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --bg: #f8fafc;
+            --bg-card: #ffffff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, .12);
+            --shadow-sm: 0 2px 10px rgba(0, 0, 0, .06);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 24px;
+            --transition: all .25s cubic-bezier(.4, 0, .2, 1);
+            --font-family: 'Cairo', 'Inter', sans-serif;
+        }
 
-.login-wrap{width:100%;max-width:400px;}
-.brand{text-align:center;margin-bottom:24px;color:#fff;}
-.brand i{font-size:42px;opacity:.95;}
-.brand h1{font-size:20px;font-weight:800;margin-top:10px;}
-.brand p{font-size:12px;opacity:.85;margin-top:4px;letter-spacing:.3px;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-.card{
-  background:var(--bg-card);
-  border-radius:var(--radius-lg);
-  box-shadow:var(--shadow-lg);
-  padding:32px 26px;
-}
-.card h2{font-size:17px;font-weight:800;margin-bottom:4px;}
-.card .sub{font-size:12px;color:var(--text-secondary);margin-bottom:24px;}
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 45%, var(--secondary) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-.field{margin-bottom:14px;text-align:right;}
-.field label{display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;}
-.field .input-wrap{position:relative;}
-.field .input-wrap i{position:absolute;top:50%;right:14px;transform:translateY(-50%);color:var(--text-light);font-size:14px;}
-.field input{
-  width:100%;padding:12px 40px 12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-  font-family:var(--font-family);font-size:14px;background:var(--bg);color:var(--text);outline:none;transition:var(--transition);
-}
-.field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+        /* شاشة التحميل */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
-.submit-btn{
-  width:100%;padding:13px;margin-top:6px;
-  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
-  color:#fff;border:none;border-radius:var(--radius-sm);
-  font-family:var(--font-family);font-weight:700;font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--transition);
-}
-.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(79,70,229,.35);}
-.submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+        /* حاوية البطاقة */
+        .login-wrap {
+            width: 100%;
+            max-width: 400px;
+        }
 
-.err-box{
-  background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;
-  padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:14px;display:none;gap:8px;align-items:center;
-}
-.err-box.show{display:flex;}
+        /* الشعار العلوي */
+        .brand {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+        .brand i {
+            font-size: 44px;
+            opacity: .95;
+        }
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 10px;
+        }
+        .brand p {
+            font-size: 12px;
+            opacity: .85;
+            margin-top: 4px;
+            letter-spacing: .3px;
+        }
 
-.footnote{text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.75);}
-</style>
+        /* البطاقة الأساسية */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 34px 28px;
+            text-align: center;
+        }
+
+        /* الشعار داخل الصندوق */
+        .card-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, .35);
+        }
+        .card-logo i {
+            font-size: 40px;
+            color: #fff;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+        .card .sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        /* زر Google */
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .google-btn:hover {
+            border-color: var(--primary-light);
+            box-shadow: 0 4px 16px rgba(79, 70, 229, .15);
+            transform: translateY(-2px);
+        }
+        .google-btn i {
+            font-size: 20px;
+            color: #ea4335;
+        }
+        .google-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* رسالة الخطأ */
+        .err-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 18px;
+            display: none;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        .err-box.show {
+            display: flex;
+        }
+
+        .footnote {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, .75);
+        }
+
+        /* تحسينات للهواتف */
+        @media (max-width: 480px) {
+            .card {
+                padding: 24px 18px;
+            }
+            .card-logo {
+                width: 64px;
+                height: 64px;
+            }
+            .card-logo i {
+                font-size: 32px;
+            }
+            .google-btn {
+                font-size: 14px;
+                padding: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div id="loading-screen"><div class="spinner"></div><p style="font-size:13px;color:var(--text-secondary)">جاري التحقق...</p></div>
+    <!-- شاشة تحميل البداية -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p style="font-size:13px;color:var(--text-secondary)">جاري التحقق...</p>
+    </div>
 
-<div class="login-wrap">
-  <div class="brand">
-    <i class="fas fa-shield-halved"></i>
-    <h1>بوابة الطلاب</h1>
-    <p>لوحة تحكم الإدارة</p>
-  </div>
-
-  <div class="card">
-    <h2>تسجيل دخول الأدمن</h2>
-    <p class="sub">هذه الصفحة مخصصة لفريق الإدارة فقط</p>
-
-    <div id="err-box" class="err-box"><i class="fas fa-triangle-exclamation"></i><span id="err-text"></span></div>
-
-    <form id="login-form" onsubmit="return false;">
-      <div class="field">
-        <label>البريد الإلكتروني</label>
-        <div class="input-wrap">
-          <input type="email" id="admin-email" placeholder="admin@example.com" autocomplete="username">
-          <i class="fas fa-envelope"></i>
+    <div class="login-wrap">
+        <!-- الشعار الخارجي -->
+        <div class="brand">
+            <i class="fas fa-shield-halved"></i>
+            <h1>بوابة الطلاب</h1>
+            <p>لوحة تحكم الإدارة</p>
         </div>
-      </div>
-      <div class="field">
-        <label>كلمة المرور</label>
-        <div class="input-wrap">
-          <input type="password" id="admin-password" placeholder="••••••••" autocomplete="current-password">
-          <i class="fas fa-lock"></i>
+
+        <!-- البطاقة -->
+        <div class="card">
+            <!-- شعار داخل الصندوق -->
+            <div class="card-logo">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+
+            <h2>تسجيل دخول الأدمن</h2>
+            <p class="sub">الدخول بحساب Google المصرّح به فقط</p>
+
+            <!-- صندوق الأخطاء -->
+            <div id="err-box" class="err-box">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span id="err-text"></span>
+            </div>
+
+            <!-- زر تسجيل Google -->
+            <button id="google-login-btn" class="google-btn" onclick="handleGoogleLogin()">
+                <i class="fab fa-google"></i>
+                تسجيل الدخول عبر Google
+            </button>
         </div>
-      </div>
-      <button type="submit" id="submit-btn" class="submit-btn" onclick="handleAdminLogin()">
-        <i class="fas fa-right-to-bracket"></i> دخول
-      </button>
-    </form>
-  </div>
 
-  <p class="footnote">هذا الوصول مقتصر على حسابات الإدارة المُصرّح بها فقط</p>
-</div>
+        <p class="footnote">هذا الوصول مقتصر على حسابات الإدارة المُصرّح بها فقط</p>
+    </div>
 
-<script>
-/* ================== إعداد Supabase (نفس مشروع الطلاب بالظبط) ================== */
-const SUPABASE_URL = 'https://bzkbamohnjjzwxlvnodm.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_u48RJaZLVcDk-rXmzsl0NQ_N9egVFEb';
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script>
+        /* ============================================================
+                   إعداد Supabase — نفس بيانات المشروع
+                   ============================================================ */
+        const SUPABASE_URL = 'https://bzkbamohnjjzwxlvnodm.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_u48RJaZLVcDk-rXmzsl0NQ_N9egVFEb';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// جدول لازم ينشأ في Supabase قبل الاستخدام:
-// create table admin_users (
-//   id uuid primary key references auth.users(id),
-//   email text, full_name text, avatar_url text,
-//   selected_year text, created_at timestamptz default now()
-// );
+        /* ============================================================
+                   عند تحميل الصفحة: التحقق من جلسة موجودة
+                   ============================================================ */
+        window.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // 1. نجلب الجلسة الحالية إن وجدت
+                const { data: { session } } = await _supabase.auth.getSession();
 
-window.addEventListener('DOMContentLoaded', checkExistingSession);
+                if (session) {
+                    // 2. نتحقق من أن المستخدم مسجل في جدول admin_users
+                    const isAdmin = await verifyAdmin(session.user.id);
+                    if (isAdmin) {
+                        // -> موجود وصلاحيته سليمة: نوجه للوحة التحكم
+                        window.location.href = 'admin-index.html';
+                        return;
+                    } else {
+                        // -> مش أدمن: نخرج الجلسة ونكمل عرض صفحة الدخول
+                        await _supabase.auth.signOut();
+                    }
+                }
+            } catch (e) {
+                // أي خطأ نستمر في عرض الصفحة
+                console.warn('تحقق الجلسة:', e);
+            }
 
-async function checkExistingSession(){
-  try{
-    const { data: { session } } = await _supabase.auth.getSession();
-    if(session){
-      const isAdmin = await verifyAdmin(session.user.id);
-      if(isAdmin){ window.location.href = 'admin-index.html'; return; }
-      // مش أدمن -> نسجل خروجه من هنا فوراً عشان مايفضلش جلسة عالقة
-      await _supabase.auth.signOut();
-    }
-  }catch(e){}
-  document.getElementById('loading-screen').style.display = 'none';
-}
+            // إخفاء شاشة التحميل
+            document.getElementById('loading-screen').style.display = 'none';
+        });
 
-async function verifyAdmin(userId){
-  const { data, error } = await _supabase.from('admin_users').select('id').eq('id', userId).maybeSingle();
-  return !error && !!data;
-}
+        /* ============================================================
+                   التحقق من وجود المستخدم في جدول admin_users
+                   ============================================================ */
+        async function verifyAdmin(userId) {
+            try {
+                const { data, error } = await _supabase
+                    .from('admin_users')
+                    .select('id')
+                    .eq('id', userId)
+                    .maybeSingle();
 
-function showError(msg){
-  const box = document.getElementById('err-box');
-  document.getElementById('err-text').innerText = msg;
-  box.classList.add('show');
-}
-function hideError(){ document.getElementById('err-box').classList.remove('show'); }
+                // لو فيه بيانات و مفيش خطأ => الأدمن موجود
+                return !error && !!data;
+            } catch {
+                return false;
+            }
+        }
 
-async function handleAdminLogin(){
-  hideError();
-  const email = document.getElementById('admin-email').value.trim();
-  const password = document.getElementById('admin-password').value;
-  if(!email || !password){ showError('برجاء إدخال البريد الإلكتروني وكلمة المرور'); return; }
+        /* ============================================================
+                   معالج تسجيل الدخول بـ Google
+                   ============================================================ */
+        async function handleGoogleLogin() {
+            const btn = document.getElementById('google-login-btn');
+            const errBox = document.getElementById('err-box');
+            const errText = document.getElementById('err-text');
 
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق...';
+            // إخفاء أي خطأ سابق
+            errBox.classList.remove('show');
 
-  try{
-    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-    if(error || !data.user){
-      showError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-      return;
-    }
-    const isAdmin = await verifyAdmin(data.user.id);
-    if(!isAdmin){
-      await _supabase.auth.signOut();
-      showError('هذا الحساب لا يملك صلاحية الدخول إلى لوحة الإدارة');
-      return;
-    }
-    window.location.href = 'admin-index.html';
-  }catch(e){
-    showError('حدث خطأ أثناء تسجيل الدخول، حاول مرة أخرى');
-  }finally{
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> دخول';
-  }
-}
+            // تعطيل الزر ومنع الضغط المتكرر
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوجيه...';
 
-document.getElementById('admin-password').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') handleAdminLogin();
-});
-</script>
+            try {
+                // نبدأ عملية OAuth مع Google
+                // redirectTo: بعد المصادقة يعود إلى نفس الصفحة (admin-login.html)
+                // أو يمكن توجيهه مباشرة إلى admin-index.html بعد نجاح التسجيل
+                // لكن الأفضل أن يعود إلى admin-login.html ليقوم الكود بالتحقق والتوجيه.
+                const { error } = await _supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + window.location.pathname,
+                        // يمكن إضافة scopes إذا احتجت
+                        // scopes: 'email profile'
+                    }
+                });
+
+                if (error) {
+                    // في حالة حدوث خطأ أثناء فتح نافذة Google
+                    throw error;
+                }
+
+                // في الحالة الطبيعية، سيتم إعادة توجيه المستخدم إلى Google،
+                // ثم العودة إلى هذه الصفحة بعد المصادقة.
+                // لذلك لا نحتاج لأي شيء آخر هنا.
+            } catch (err) {
+                // عرض الخطأ للمستخدم
+                errText.innerText = err.message || 'حدث خطأ أثناء الاتصال بـ Google';
+                errBox.classList.add('show');
+
+                // إعادة تفعيل الزر
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+            }
+        }
+
+        /* ============================================================
+                   الاستماع للأحداث القادمة من OAuth (عند العودة من Google)
+                   ============================================================ */
+        // سيتم تنفيذ هذا الكود فور عودة الصفحة من Google
+        (async function handleOAuthRedirect() {
+            try {
+                // إذا كانت هناك جلسة تم إنشاؤها حديثاً عن طريق OAuth
+                const { data: { session } } = await _supabase.auth.getSession();
+
+                if (session) {
+                    // تحقق من صلاحية الأدمن
+                    const isAdmin = await verifyAdmin(session.user.id);
+
+                    if (isAdmin) {
+                        // تسجيل دخول ناجح -> التوجيه للوحة التحكم
+                        window.location.href = 'admin-index.html';
+                    } else {
+                        // الحساب ليس أدمن -> نسجله خروج ونعرض رسالة
+                        await _supabase.auth.signOut();
+
+                        const errBox = document.getElementById('err-box');
+                        const errText = document.getElementById('err-text');
+                        errText.innerText = 'هذا الحساب لا يملك صلاحية الدخول إلى لوحة الإدارة';
+                        errBox.classList.add('show');
+
+                        // إعادة تفعيل الزر (إن وجد)
+                        const btn = document.getElementById('google-login-btn');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+                        }
+                    }
+                }
+            } catch (e) {
+                // أي خطأ في المعالجة نكتفي بتسجيله في الكونسول
+                console.warn('معالجة إعادة التوجيه OAuth:', e);
+            }
+        })();
+
+        // عند الضغط على Enter (ليس ضرورياً لكن للحماية)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                // لا نقوم بأي شيء تلقائي، المستخدم يجب أن يضغط على الزر
+                e.preventDefault();
+            }
+        });
+    </script>
+
 </body>
 </html>
