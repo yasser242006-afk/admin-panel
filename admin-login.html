@@ -1,419 +1,384 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>تسجيل دخول الأدمن - بوابة الطلاب</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    </script>
-    <style>
-        /* ===== نفس ألوان الموقع الرئيسية ===== */
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --primary-dark: #3730a3;
-            --secondary: #0ea5e9;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warn: #f59e0b;
-            --bg: #f8fafc;
-            --bg-card: #ffffff;
-            --text: #0f172a;
-            --text-secondary: #64748b;
-            --text-light: #94a3b8;
-            --border: #e2e8f0;
-            --shadow-lg: 0 10px 40px rgba(0, 0, 0, .12);
-            --shadow-sm: 0 2px 10px rgba(0, 0, 0, .06);
-            --radius-sm: 8px;
-            --radius-md: 14px;
-            --radius-lg: 24px;
-            --transition: all .25s cubic-bezier(.4, 0, .2, 1);
-            --font-family: 'Cairo', 'Inter', sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>دخول الإدمن - بوابة الطلاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-dark: #3730a3;
+      --secondary: #0ea5e9;
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #64748b;
+      --text-light: #94a3b8;
+      --border: #e2e8f0;
+      --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --radius-lg: 24px;
+      --radius-md: 14px;
+      --radius-sm: 8px;
+      --transition: all .25s cubic-bezier(.4, 0, .2, 1);
+      --font-family: 'Cairo', 'Inter', sans-serif;
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: var(--font-family);
-            background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 45%, var(--secondary) 100%);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    body {
+      font-family: var(--font-family);
+      background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 45%, var(--secondary) 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
 
-        /* شاشة التحميل */
-        #loading-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .spinner {
-            width: 44px;
-            height: 44px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+    /* شاشة التحميل */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
-        /* حاوية البطاقة */
-        .login-wrap {
-            width: 100%;
-            max-width: 400px;
-        }
+    .login-wrap {
+      width: 100%;
+      max-width: 400px;
+    }
 
-        /* الشعار العلوي */
-        .brand {
-            text-align: center;
-            margin-bottom: 24px;
-            color: #fff;
-        }
-        .brand i {
-            font-size: 44px;
-            opacity: .95;
-        }
-        .brand h1 {
-            font-size: 20px;
-            font-weight: 800;
-            margin-top: 10px;
-        }
-        .brand p {
-            font-size: 12px;
-            opacity: .85;
-            margin-top: 4px;
-            letter-spacing: .3px;
-        }
+    /* الشعار خارج الصندوق (اختياري، لكننا سنضعه داخل الصندوق كما طلبت) */
+    .brand-out {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+    .brand-out i {
+      font-size: 40px;
+      opacity: .95;
+    }
+    .brand-out h1 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .brand-out p {
+      font-size: 12px;
+      opacity: .85;
+      margin-top: 2px;
+    }
 
-        /* البطاقة الأساسية */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            padding: 34px 28px;
-            text-align: center;
-        }
+    /* بطاقة تسجيل الدخول */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 34px 28px 30px;
+      position: relative;
+      overflow: hidden;
+    }
 
-        /* الشعار داخل الصندوق */
-        .card-logo {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%;
-            margin-bottom: 16px;
-            box-shadow: 0 6px 20px rgba(79, 70, 229, .35);
-        }
-        .card-logo i {
-            font-size: 40px;
-            color: #fff;
-        }
+    /* الشعار داخل الصندوق */
+    .card-brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .card-brand .logo-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      font-size: 32px;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, .3);
+      margin-bottom: 12px;
+    }
+    .card-brand h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .card-brand p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
 
-        .card h2 {
-            font-size: 20px;
-            font-weight: 800;
-            margin-bottom: 2px;
-        }
-        .card .sub {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 28px;
-        }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 22px 0 18px;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider span {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-light);
+      letter-spacing: .5px;
+    }
 
-        /* زر Google */
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 14px;
-            background: #fff;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-family);
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text);
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-        .google-btn:hover {
-            border-color: var(--primary-light);
-            box-shadow: 0 4px 16px rgba(79, 70, 229, .15);
-            transform: translateY(-2px);
-        }
-        .google-btn i {
-            font-size: 20px;
-            color: #ea4335;
-        }
-        .google-btn:disabled {
-            opacity: .6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+    /* زر Google */
+    .google-btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      font-family: var(--font-family);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 4px;
+    }
+    .google-btn i {
+      font-size: 20px;
+      color: #4285F4;
+    }
+    .google-btn:hover {
+      border-color: var(--primary-light);
+      background: var(--bg);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .06);
+    }
+    .google-btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
-        /* رسالة الخطأ */
-        .err-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-            font-size: 12px;
-            padding: 10px 12px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 18px;
-            display: none;
-            gap: 8px;
-            align-items: center;
-            justify-content: center;
-        }
-        .err-box.show {
-            display: flex;
-        }
+    /* رسائل الخطأ */
+    .err-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      display: none;
+      gap: 8px;
+      align-items: center;
+    }
+    .err-box.show {
+      display: flex;
+    }
 
-        .footnote {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, .75);
-        }
-
-        /* تحسينات للهواتف */
-        @media (max-width: 480px) {
-            .card {
-                padding: 24px 18px;
-            }
-            .card-logo {
-                width: 64px;
-                height: 64px;
-            }
-            .card-logo i {
-                font-size: 32px;
-            }
-            .google-btn {
-                font-size: 14px;
-                padding: 12px;
-            }
-        }
-    </style>
+    .footnote {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, .75);
+    }
+  </style>
 </head>
 <body>
 
-    <!-- شاشة تحميل البداية -->
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <p style="font-size:13px;color:var(--text-secondary)">جاري التحقق...</p>
+  <!-- شاشة التحميل -->
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--text-secondary)">جاري التحقق من الجلسة...</p>
+  </div>
+
+  <div class="login-wrap">
+    <!-- الشعار الخارجي (اختياري) -->
+    <div class="brand-out">
+      <i class="fas fa-shield-halved"></i>
+      <h1>بوابة الطلاب</h1>
+      <p>لوحة تحكم الإدارة</p>
     </div>
 
-    <div class="login-wrap">
-        <!-- الشعار الخارجي -->
-        <div class="brand">
-            <i class="fas fa-shield-halved"></i>
-            <h1>بوابة الطلاب</h1>
-            <p>لوحة تحكم الإدارة</p>
-        </div>
+    <!-- بطاقة الدخول -->
+    <div class="card">
+      <!-- الشعار داخل الصندوق -->
+      <div class="card-brand">
+        <div class="logo-icon"><i class="fas fa-shield-halved"></i></div>
+        <h2>تسجيل دخول الإدمن</h2>
+        <p>هذه الصفحة مخصصة لفريق الإدارة فقط</p>
+      </div>
 
-        <!-- البطاقة -->
-        <div class="card">
-            <!-- شعار داخل الصندوق -->
-            <div class="card-logo">
-                <i class="fas fa-shield-halved"></i>
-            </div>
+      <!-- صندوق الخطأ -->
+      <div id="err-box" class="err-box">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span id="err-text"></span>
+      </div>
 
-            <h2>تسجيل دخول الأدمن</h2>
-            <p class="sub">الدخول بحساب Google المصرّح به فقط</p>
+      <!-- زر تسجيل الدخول عبر Google -->
+      <button class="google-btn" id="google-login-btn" onclick="loginWithGoogle()">
+        <i class="fab fa-google"></i>
+        <span>تسجيل الدخول عبر Google</span>
+      </button>
 
-            <!-- صندوق الأخطاء -->
-            <div id="err-box" class="err-box">
-                <i class="fas fa-triangle-exclamation"></i>
-                <span id="err-text"></span>
-            </div>
+      <!-- فاصل (للشكل) -->
+      <div class="divider"><span>أو</span></div>
 
-            <!-- زر تسجيل Google -->
-            <button id="google-login-btn" class="google-btn" onclick="handleGoogleLogin()">
-                <i class="fab fa-google"></i>
-                تسجيل الدخول عبر Google
-            </button>
-        </div>
-
-        <p class="footnote">هذا الوصول مقتصر على حسابات الإدارة المُصرّح بها فقط</p>
+      <!-- زر إضافي (اختياري) يمكن إزالته، لكنني تركته للشكل -->
+      <button class="google-btn" style="border-color:transparent;background:transparent;cursor:default;opacity:.4;" disabled>
+        <i class="fas fa-envelope"></i>
+        <span>تسجيل الدخول بالبريد (للمطورين)</span>
+      </button>
     </div>
 
-    <script>
-        /* ============================================================
-                   إعداد Supabase — نفس بيانات المشروع
-                   ============================================================ */
-        const SUPABASE_URL = 'https://bzkbamohnjjzwxlvnodm.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_u48RJaZLVcDk-rXmzsl0NQ_N9egVFEb';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <p class="footnote">هذا الوصول مقتصر على حسابات الإدارة المُصرّح بها فقط</p>
+  </div>
 
-        /* ============================================================
-                   عند تحميل الصفحة: التحقق من جلسة موجودة
-                   ============================================================ */
-        window.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // 1. نجلب الجلسة الحالية إن وجدت
-                const { data: { session } } = await _supabase.auth.getSession();
+  <script>
+    /* ================== إعداد Supabase (نفس مشروع الطلاب) ================== */
+    const SUPABASE_URL = 'https://bzkbamohnjjzwxlvnodm.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_u48RJaZLVcDk-rXmzsl0NQ_N9egVFEb';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-                if (session) {
-                    // 2. نتحقق من أن المستخدم مسجل في جدول admin_users
-                    const isAdmin = await verifyAdmin(session.user.id);
-                    if (isAdmin) {
-                        // -> موجود وصلاحيته سليمة: نوجه للوحة التحكم
-                        window.location.href = 'admin-index.html';
-                        return;
-                    } else {
-                        // -> مش أدمن: نخرج الجلسة ونكمل عرض صفحة الدخول
-                        await _supabase.auth.signOut();
-                    }
-                }
-            } catch (e) {
-                // أي خطأ نستمر في عرض الصفحة
-                console.warn('تحقق الجلسة:', e);
-            }
+    // جدول admin_users يجب أن يكون موجوداً مسبقاً:
+    // create table admin_users (
+    //   id uuid primary key references auth.users(id),
+    //   email text,
+    //   full_name text,
+    //   avatar_url text,
+    //   selected_year text,
+    //   created_at timestamptz default now()
+    // );
 
-            // إخفاء شاشة التحميل
-            document.getElementById('loading-screen').style.display = 'none';
-        });
-
-        /* ============================================================
-                   التحقق من وجود المستخدم في جدول admin_users
-                   ============================================================ */
-        async function verifyAdmin(userId) {
-            try {
-                const { data, error } = await _supabase
-                    .from('admin_users')
-                    .select('id')
-                    .eq('id', userId)
-                    .maybeSingle();
-
-                // لو فيه بيانات و مفيش خطأ => الأدمن موجود
-                return !error && !!data;
-            } catch {
-                return false;
-            }
+    /* ================== التحقق من الجلسة الحالية ================== */
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+          const isAdmin = await verifyAdmin(session.user.id);
+          if (isAdmin) {
+            window.location.href = 'admin-index.html';
+            return;
+          }
+          // إذا لم يكن أدمن، نسجل خروجه فوراً
+          await _supabase.auth.signOut();
         }
+      } catch (e) { /* تجاهل الأخطاء */ }
+      document.getElementById('loading-screen').style.display = 'none';
+    });
 
-        /* ============================================================
-                   معالج تسجيل الدخول بـ Google
-                   ============================================================ */
-        async function handleGoogleLogin() {
-            const btn = document.getElementById('google-login-btn');
-            const errBox = document.getElementById('err-box');
-            const errText = document.getElementById('err-text');
+    /* ================== التحقق من صلاحية الأدمن ================== */
+    async function verifyAdmin(userId) {
+      const { data, error } = await _supabase
+        .from('admin_users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      return !error && !!data;
+    }
 
-            // إخفاء أي خطأ سابق
-            errBox.classList.remove('show');
+    /* ================== عرض الخطأ ================== */
+    function showError(msg) {
+      const box = document.getElementById('err-box');
+      document.getElementById('err-text').innerText = msg;
+      box.classList.add('show');
+    }
 
-            // تعطيل الزر ومنع الضغط المتكرر
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوجيه...';
+    function hideError() {
+      document.getElementById('err-box').classList.remove('show');
+    }
 
-            try {
-                // نبدأ عملية OAuth مع Google
-                // redirectTo: بعد المصادقة يعود إلى نفس الصفحة (admin-login.html)
-                // أو يمكن توجيهه مباشرة إلى admin-index.html بعد نجاح التسجيل
-                // لكن الأفضل أن يعود إلى admin-login.html ليقوم الكود بالتحقق والتوجيه.
-                const { error } = await _supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirectTo: window.location.origin + window.location.pathname,
-                        // يمكن إضافة scopes إذا احتجت
-                        // scopes: 'email profile'
-                    }
-                });
+    /* ================== تسجيل الدخول عبر Google ================== */
+    async function loginWithGoogle() {
+      const btn = document.getElementById('google-login-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوجيه...';
+      hideError();
 
-                if (error) {
-                    // في حالة حدوث خطأ أثناء فتح نافذة Google
-                    throw error;
-                }
-
-                // في الحالة الطبيعية، سيتم إعادة توجيه المستخدم إلى Google،
-                // ثم العودة إلى هذه الصفحة بعد المصادقة.
-                // لذلك لا نحتاج لأي شيء آخر هنا.
-            } catch (err) {
-                // عرض الخطأ للمستخدم
-                errText.innerText = err.message || 'حدث خطأ أثناء الاتصال بـ Google';
-                errBox.classList.add('show');
-
-                // إعادة تفعيل الزر
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
-            }
-        }
-
-        /* ============================================================
-                   الاستماع للأحداث القادمة من OAuth (عند العودة من Google)
-                   ============================================================ */
-        // سيتم تنفيذ هذا الكود فور عودة الصفحة من Google
-        (async function handleOAuthRedirect() {
-            try {
-                // إذا كانت هناك جلسة تم إنشاؤها حديثاً عن طريق OAuth
-                const { data: { session } } = await _supabase.auth.getSession();
-
-                if (session) {
-                    // تحقق من صلاحية الأدمن
-                    const isAdmin = await verifyAdmin(session.user.id);
-
-                    if (isAdmin) {
-                        // تسجيل دخول ناجح -> التوجيه للوحة التحكم
-                        window.location.href = 'admin-index.html';
-                    } else {
-                        // الحساب ليس أدمن -> نسجله خروج ونعرض رسالة
-                        await _supabase.auth.signOut();
-
-                        const errBox = document.getElementById('err-box');
-                        const errText = document.getElementById('err-text');
-                        errText.innerText = 'هذا الحساب لا يملك صلاحية الدخول إلى لوحة الإدارة';
-                        errBox.classList.add('show');
-
-                        // إعادة تفعيل الزر (إن وجد)
-                        const btn = document.getElementById('google-login-btn');
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
-                        }
-                    }
-                }
-            } catch (e) {
-                // أي خطأ في المعالجة نكتفي بتسجيله في الكونسول
-                console.warn('معالجة إعادة التوجيه OAuth:', e);
-            }
-        })();
-
-        // عند الضغط على Enter (ليس ضرورياً لكن للحماية)
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                // لا نقوم بأي شيء تلقائي، المستخدم يجب أن يضغط على الزر
-                e.preventDefault();
-            }
+      try {
+        // نستخدم redirectTo لتوجيه المستخدم بعد المصادقة إلى نفس صفحة الدخول
+        // ثم يقوم حدث onAuthStateChange بالتقاط الجلسة والتحقق من الصلاحية
+        const { error } = await _supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + window.location.pathname,
+          },
         });
-    </script>
+        if (error) {
+          showError('حدث خطأ أثناء محاولة تسجيل الدخول عبر Google');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+          return;
+        }
+        // بعد التوجيه، سيتم التعامل مع الـ callback عبر مراقبة التغيير
+      } catch (e) {
+        showError('حدث خطأ غير متوقع، حاول مرة أخرى');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+      }
+    }
 
+    /* ================== مراقبة تغيير حالة المصادقة ================== */
+    _supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const userId = session.user.id;
+        const isAdmin = await verifyAdmin(userId);
+        if (isAdmin) {
+          window.location.href = 'admin-index.html';
+        } else {
+          // المستخدم ليس أدمن: نسجل خروجه ونعرض رسالة
+          await _supabase.auth.signOut();
+          showError('هذا الحساب لا يملك صلاحية الدخول إلى لوحة الإدارة');
+          const btn = document.getElementById('google-login-btn');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+        }
+      }
+      if (event === 'SIGNED_OUT') {
+        // إعادة تعيين الزر في حالة الخروج
+        const btn = document.getElementById('google-login-btn');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fab fa-google"></i> تسجيل الدخول عبر Google';
+        }
+      }
+    });
+
+    // إذا تم العودة من Google OAuth مع وجود معاملات في الرابط، يتم معالجتها تلقائياً
+    // لكننا نعتمد على onAuthStateChange لإعادة التوجيه بعد نجاح المصادقة.
+  </script>
 </body>
 </html>
