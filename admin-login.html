@@ -126,7 +126,7 @@ body::before{
 }
 .google-btn:hover{border-color:var(--primary-light);box-shadow:0 6px 18px rgba(79,70,229,.15);transform:translateY(-1px);}
 .google-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
-.google-btn svg{width:19px;height:19px;flex-shrink:0;}
+.google-btn svg{width:19px;height:19px;flex-shrnk:0;;}
 
 .access-note{
   display:flex;align-items:center;justify-content:center;gap:8px;margin-top:22px;
@@ -371,7 +371,7 @@ async function handleGoogleLogin(){
   const { data: { session } } = await _supabase.auth.getSession();
   if(session){
     const isAdmin = await verifyAdmin(session.user.id);
-    if(isAdmin){ window.location.href = 'admin-index.html'; }
+    if(isAdmin){ window.location.href = 'index.html'; }
   }
 })();
 </script>
