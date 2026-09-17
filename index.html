@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hand Tracking Particles - Interactive</title>
+
+<!-- مكتبات MediaPipe لتتبع حركة اليد والكاميرا -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #05000a;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: sans-serif;
+  }
+
+  /* كانفاس الجسيمات والتأثيرات */
+  #particleCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  /* فيديو الكاميرا مصغر في زاوية الشاشة زي الفيديو بالظبط */
+  #webcam {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 130px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid #ff2a8d;
+    z-index: 10;
+    transform: scaleX(-1); /* مرآة */
+    box-shadow: 0 0 15px rgba(255, 42, 141, 0.5);
+  }
+
+  #status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #00ffcc;
+    font-size: 14px;
+    z-index: 10;
+    background: rgba(0,0,0,0.6);
+    padding: 8px 12px;
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div id="status">جاري تشغيل الكاميرا وتتبع اليد...</div>
+<video id="webcam" autoplay playsinline></video>
+<canvas id="particleCanvas"></canvas>
+
+<script>
+const videoElement = document.getElementById('webcam');
+const pCanvas = document.getElementById('particleCanvas');
+const pctx = pCanvas.getContext('2d');
+const statusDiv = document.getElementById('status');
+
+let W = pCanvas.width = window.innerWidth;
+let H = pCanvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+  W = pCanvas.width = window.innerWidth;
+  H = pCanvas.height = window.innerHeight;
+});
+
+// إعداد الجسيمات
+const PARTICLE_COUNT = 1200;
+let particles = [];
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particles.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    tx: Math.random() * W,
+    ty: Math.random() * H,
+    size: Math.random() * 2 + 1,
+    color: '#ff2a8d'
+  });
+}
+
+// 1. أشكال الجسيمات
+function sampleText(text) {
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const octx = off.getContext('2d');
+  octx.fillStyle = '#fff';
+  octx.textAlign = 'center';
+  octx.textBaseline = 'middle';
+  octx.font = `900 ${Math.min(W, H) * 0.12}px sans-serif`;
+  octx.fillText(text, W / 2, H / 2);
+  
+  const data = octx.getImageData(0, 0, W, H).data;
+  const pts = [];
+  for (let y = 0; y < H; y += 4) {
+    for (let x = 0; x < W; x += 4) {
+      if (data[((y * W + x) * 4) + 3] > 128) {
+        pts.push({ x, y, color: '#00ffff' });
+      }
+    }
+  }
+  return pts;
+}
+
+function getHeartPoints() {
+  const pts = [];
+  const scale = Math.min(W, H) * 0.022;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const t = (i / PARTICLE_COUNT) * Math.PI * 2;
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+    pts.push({ x: W / 2 + x * scale, y: H / 2 + y * scale, color: '#ff2a8d' });
+  }
+  return pts;
+}
+
+function getPlanetPoints() {
+  const pts = [];
+  const r = Math.min(W, H) * 0.18;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    if (i < PARTICLE_COUNT * 0.5) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * r;
+      pts.push({ x: W / 2 + Math.cos(angle) * radius, y: H / 2 + Math.sin(angle) * radius, color: '#ffcc00' });
+    } else {
+      const angle = Math.random() * Math.PI * 2;
+      const rx = (r * 1.8) * Math.cos(angle);
+      const ry = (r * 0.4) * Math.sin(angle);
+      pts.push({ x: W / 2 + rx, y: H / 2 + ry, color: '#ffaa00' });
+    }
+  }
+  return pts;
+}
+
+function getRandomPoints() {
+  const pts = [];
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    pts.push({ x: Math.random() * W, y: Math.random() * H, color: '#a0a0a0' });
+  }
+  return pts;
+}
+
+function setTargets(points) {
+  for (let i = 0; i < particles.length; i++) {
+    const p = points[i % points.length];
+    particles[i].tx = p.x;
+    particles[i].ty = p.y;
+    particles[i].color = p.color;
+  }
+}
+
+function animate() {
+  pctx.clearRect(0, 0, W, H);
+  for (const p of particles) {
+    p.x += (p.tx - p.x) * 0.08;
+    p.y += (p.ty - p.y) * 0.08;
+    pctx.beginPath();
+    pctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    pctx.fillStyle = p.color;
+    pctx.fill();
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+// 2. تحليل حركة الأصابع عبر الكاميرا
+let currentGesture = '';
+
+function detectGesture(landmarks) {
+  // معرفة هل الأصابع مفتوحة أم مطوية
+  const isIndexUp = landmarks[8].y < landmarks[6].y;
+  const isMiddleUp = landmarks[12].y < landmarks[10].y;
+  const isRingUp = landmarks[16].y < landmarks[14].y;
+  const isPinkyUp = landmarks[20].y < landmarks[18].y;
+
+  if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) return 'OPEN_HAND';
+  if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) return 'VICTORY';
+  if (isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) return 'ONE_FINGER';
+  if (!isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) return 'FIST';
+
+  return 'UNKNOWN';
+}
+
+function onResults(results) {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    const landmarks = results.multiHandLandmarks[0];
+    const gesture = detectGesture(landmarks);
+
+    if (gesture !== currentGesture) {
+      currentGesture = gesture;
+      if (gesture === 'OPEN_HAND') {
+        statusDiv.innerText = '🖐️ كف مفتوح (تشتت الجسيمات)';
+        setTargets(getRandomPoints());
+      } else if (gesture === 'VICTORY') {
+        statusDiv.innerText = '✌️ علامة النصر (I LOVE YOU)';
+        setTargets(sampleText('I LOVE YOU'));
+      } else if (gesture === 'ONE_FINGER') {
+        statusDiv.innerText = '☝️ إصبع واحد (كوكب زحل)';
+        setTargets(getPlanetPoints());
+      } else if (gesture === 'FIST') {
+        statusDiv.innerText = '✊ قبضة يد (شكل قلب)';
+        setTargets(getHeartPoints());
+      }
+    }
+  } else {
+    statusDiv.innerText = 'ضع يدك أمام الكاميرا...';
+  }
+}
+
+// 3. تشغيل الكاميرا وMediaPipe
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+  maxNumHands: 1,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.6,
+  minTrackingConfidence: 0.6
+});
+
+hands.onResults(onResults);
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    await hands.send({ image: videoElement });
+  },
+  width: 640,
+  height: 480
+});
+
+camera.start();
+</script>
+</body>
+</html>
