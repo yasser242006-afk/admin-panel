@@ -1,281 +1,1425 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Hand Tracking Particles - Interactive</title>
 
-<!-- مكتبات MediaPipe لتتبع حركة اليد والكاميرا -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<title>3D Hand Particle</title>
+
+<!-- Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<!-- MediaPipe Hands -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #05000a;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
-    font-family: sans-serif;
-  }
 
-  /* كانفاس الجسيمات والتأثيرات */
-  #particleCanvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 1;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  /* فيديو الكاميرا أعلي اليسار */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #020207;
+  font-family: Arial, sans-serif;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* كاميرا المستخدم */
+
+#webcam {
+  position: fixed;
+
+  top: 18px;
+  left: 18px;
+
+  width: 145px;
+  height: 108px;
+
+  object-fit: cover;
+
+  border-radius: 16px;
+
+  border: 1px solid rgba(255,255,255,.2);
+
+  transform: scaleX(-1);
+
+  opacity: .75;
+
+  z-index: 20;
+
+  box-shadow:
+    0 10px 40px rgba(0,0,0,.45),
+    0 0 30px rgba(0,255,255,.08);
+}
+
+
+/* الموبايل */
+
+@media (max-width: 600px) {
+
   #webcam {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 130px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 12px;
-    border: 2px solid #ff2a8d;
-    z-index: 10;
-    transform: scaleX(-1); /* مرآة */
-    box-shadow: 0 0 15px rgba(255, 42, 141, 0.5);
+
+    width: 105px;
+    height: 80px;
+
+    top: 12px;
+    left: 12px;
+
   }
 
-  #status {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    color: #00ffcc;
-    font-size: 14px;
-    z-index: 10;
-    background: rgba(0,0,0,0.6);
-    padding: 8px 12px;
-    border-radius: 20px;
-  }
+}
+
 </style>
 </head>
+
 <body>
 
-<div id="status">جاري تشغيل الكاميرا وتتبع اليد...</div>
-<video id="webcam" autoplay playsinline></video>
-<canvas id="particleCanvas"></canvas>
+<!-- مساحة الـ3D -->
+<div id="app"></div>
+
+<!-- الكاميرا -->
+<video
+  id="webcam"
+  autoplay
+  playsinline
+  muted>
+</video>
+
 
 <script>
-const videoElement = document.getElementById('webcam');
-const pCanvas = document.getElementById('particleCanvas');
-const pctx = pCanvas.getContext('2d');
-const statusDiv = document.getElementById('status');
 
-let W = pCanvas.width = window.innerWidth;
-let H = pCanvas.height = window.innerHeight;
+/* =========================================================
+   BASIC SETUP
+========================================================= */
 
-window.addEventListener('resize', () => {
-  W = pCanvas.width = window.innerWidth;
-  H = pCanvas.height = window.innerHeight;
-});
+const app =
+  document.getElementById("app");
 
-// إعداد الجسيمات
-const PARTICLE_COUNT = 1500;
-let particles = [];
-for (let i = 0; i < PARTICLE_COUNT; i++) {
-  particles.push({
-    x: Math.random() * W,
-    y: Math.random() * H,
-    tx: Math.random() * W,
-    ty: Math.random() * H,
-    size: Math.random() * 2 + 1,
-    color: '#ff2a8d'
-  });
+const video =
+  document.getElementById("webcam");
+
+let scene;
+let camera;
+let renderer;
+
+let particleSystem;
+let geometry;
+let material;
+
+let positions;
+let targetPositions;
+
+let particleColors;
+let targetColors;
+
+let clock =
+  new THREE.Clock();
+
+const PARTICLE_COUNT =
+  18000;
+
+
+/* =========================================================
+   COLORS
+========================================================= */
+
+const COLORS = {
+
+  cyan:
+    new THREE.Color("#00ffff"),
+
+  pink:
+    new THREE.Color("#ff2a8d"),
+
+  purple:
+    new THREE.Color("#9b5cff"),
+
+  gold:
+    new THREE.Color("#ffd166"),
+
+  white:
+    new THREE.Color("#ffffff"),
+
+  green:
+    new THREE.Color("#38ff9c")
+
+};
+
+
+/* =========================================================
+   INIT THREE.JS
+========================================================= */
+
+function initThree() {
+
+  scene =
+    new THREE.Scene();
+
+  scene.background =
+    new THREE.Color("#020207");
+
+
+  camera =
+    new THREE.PerspectiveCamera(
+      55,
+      window.innerWidth /
+      window.innerHeight,
+      0.1,
+      2000
+    );
+
+
+  camera.position.z =
+    420;
+
+
+  renderer =
+    new THREE.WebGLRenderer({
+
+      antialias: true,
+
+      alpha: false
+
+    });
+
+
+  renderer.setPixelRatio(
+    Math.min(
+      window.devicePixelRatio,
+      2
+    )
+  );
+
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+
+  renderer.outputColorSpace =
+    THREE.SRGBColorSpace;
+
+
+  app.appendChild(
+    renderer.domElement
+  );
+
+
+  createParticles();
+
+  createStars();
+
+
+  window.addEventListener(
+    "resize",
+    onResize
+  );
+
+
+  animate();
+
 }
 
-// 1. أشكال الجسيمات
-function sampleText(text) {
-  const off = document.createElement('canvas');
-  off.width = W; off.height = H;
-  const octx = off.getContext('2d');
-  octx.fillStyle = '#fff';
-  octx.textAlign = 'center';
-  octx.textBaseline = 'middle';
-  octx.font = `900 ${Math.min(W, H) * 0.12}px sans-serif`;
-  octx.fillText(text, W / 2, H / 2);
-  
-  const data = octx.getImageData(0, 0, W, H).data;
-  const pts = [];
-  for (let y = 0; y < H; y += 4) {
-    for (let x = 0; x < W; x += 4) {
-      if (data[((y * W + x) * 4) + 3] > 128) {
-        pts.push({ x, y, color: '#00ffff' });
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+function createParticles() {
+
+  geometry =
+    new THREE.BufferGeometry();
+
+
+  positions =
+    new Float32Array(
+      PARTICLE_COUNT * 3
+    );
+
+
+  targetPositions =
+    new Float32Array(
+      PARTICLE_COUNT * 3
+    );
+
+
+  particleColors =
+    new Float32Array(
+      PARTICLE_COUNT * 3
+    );
+
+
+  targetColors =
+    new Float32Array(
+      PARTICLE_COUNT * 3
+    );
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const i3 =
+      i * 3;
+
+
+    const radius = 500;
+
+
+    positions[i3] =
+      (Math.random() - .5) *
+      radius;
+
+
+    positions[i3 + 1] =
+      (Math.random() - .5) *
+      radius;
+
+
+    positions[i3 + 2] =
+      (Math.random() - .5) *
+      radius;
+
+
+    targetPositions[i3] =
+      positions[i3];
+
+
+    targetPositions[i3 + 1] =
+      positions[i3 + 1];
+
+
+    targetPositions[i3 + 2] =
+      positions[i3 + 2];
+
+
+    particleColors[i3] =
+      0;
+
+    particleColors[i3 + 1] =
+      1;
+
+    particleColors[i3 + 2] =
+      1;
+
+
+    targetColors[i3] =
+      0;
+
+    targetColors[i3 + 1] =
+      1;
+
+    targetColors[i3 + 2] =
+      1;
+
+  }
+
+
+  geometry.setAttribute(
+    "position",
+
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
+  );
+
+
+  geometry.setAttribute(
+    "color",
+
+    new THREE.BufferAttribute(
+      particleColors,
+      3
+    )
+  );
+
+
+  material =
+    new THREE.PointsMaterial({
+
+      size: 2.2,
+
+      vertexColors: true,
+
+      transparent: true,
+
+      opacity: .92,
+
+      blending:
+        THREE.AdditiveBlending,
+
+      depthWrite: false,
+
+      sizeAttenuation: true
+
+    });
+
+
+  particleSystem =
+    new THREE.Points(
+      geometry,
+      material
+    );
+
+
+  scene.add(
+    particleSystem
+  );
+
+
+  setShape(
+    createHeart()
+  );
+
+}
+
+
+/* =========================================================
+   HEART 3D
+========================================================= */
+
+function createHeart() {
+
+  const result = [];
+
+  const scale =
+    10;
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const t =
+      Math.random() *
+      Math.PI * 2;
+
+
+    const x =
+      16 *
+      Math.pow(
+        Math.sin(t),
+        3
+      );
+
+
+    const y =
+      13 * Math.cos(t)
+      - 5 * Math.cos(2 * t)
+      - 2 * Math.cos(3 * t)
+      - Math.cos(4 * t);
+
+
+    const depth =
+      (Math.random() - .5) *
+      65;
+
+
+    const spread =
+      Math.random() * 1.8;
+
+
+    result.push({
+
+      x:
+        x * scale +
+        (Math.random() - .5) *
+        spread,
+
+      y:
+        y * scale +
+        (Math.random() - .5) *
+        spread,
+
+      z:
+        depth,
+
+      color:
+        COLORS.pink
+
+    });
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================================
+   PLANET 3D
+========================================================= */
+
+function createPlanet() {
+
+  const result = [];
+
+  const radius = 125;
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const phi =
+      Math.acos(
+        2 * Math.random() - 1
+      );
+
+
+    const theta =
+      Math.random() *
+      Math.PI * 2;
+
+
+    const r =
+      radius +
+      (Math.random() - .5) *
+      5;
+
+
+    const x =
+      r *
+      Math.sin(phi) *
+      Math.cos(theta);
+
+
+    const y =
+      r *
+      Math.cos(phi);
+
+
+    const z =
+      r *
+      Math.sin(phi) *
+      Math.sin(theta);
+
+
+    result.push({
+
+      x,
+      y,
+      z,
+
+      color:
+        i % 4 === 0
+          ? COLORS.gold
+          : COLORS.cyan
+
+    });
+
+  }
+
+
+  /*
+    حلقات الكوكب
+  */
+
+  const ringStart =
+    Math.floor(
+      PARTICLE_COUNT * .75
+    );
+
+
+  for (
+    let i = ringStart;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const angle =
+      Math.random() *
+      Math.PI * 2;
+
+
+    const ringRadius =
+      175 +
+      Math.random() * 45;
+
+
+    result[i] = {
+
+      x:
+        Math.cos(angle) *
+        ringRadius,
+
+      y:
+        (Math.random() - .5) *
+        10,
+
+      z:
+        Math.sin(angle) *
+        ringRadius,
+
+      color:
+        COLORS.gold
+
+    };
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================================
+   STAR
+========================================================= */
+
+function createStarShape() {
+
+  const result = [];
+
+  const outer = 160;
+
+  const inner = 65;
+
+  const arms = 5;
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const angle =
+      Math.random() *
+      Math.PI * 2;
+
+
+    const sector =
+      angle %
+      (Math.PI * 2 / arms);
+
+
+    const distance =
+      sector <
+      Math.PI / arms
+
+        ? inner +
+          Math.random() *
+          (outer - inner)
+
+        : inner *
+          Math.random();
+
+
+    result.push({
+
+      x:
+        Math.cos(angle) *
+        distance,
+
+      y:
+        Math.sin(angle) *
+        distance,
+
+      z:
+        (Math.random() - .5) *
+        35,
+
+      color:
+        COLORS.gold
+
+    });
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================================
+   RANDOM UNIVERSE
+========================================================= */
+
+function createRandomUniverse() {
+
+  const result = [];
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const radius =
+      150 +
+      Math.random() *
+      300;
+
+
+    const angle =
+      Math.random() *
+      Math.PI * 2;
+
+
+    result.push({
+
+      x:
+        Math.cos(angle) *
+        radius,
+
+      y:
+        (Math.random() - .5) *
+        500,
+
+      z:
+        Math.sin(angle) *
+        radius,
+
+      color:
+        i % 3 === 0
+          ? COLORS.purple
+          : COLORS.cyan
+
+    });
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================================
+   TEXT PARTICLES
+========================================================= */
+
+function createText(text) {
+
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+
+  canvas.width =
+    1000;
+
+  canvas.height =
+    350;
+
+
+  const ctx =
+    canvas.getContext("2d");
+
+
+  ctx.fillStyle =
+    "white";
+
+
+  ctx.textAlign =
+    "center";
+
+
+  ctx.textBaseline =
+    "middle";
+
+
+  ctx.font =
+    "900 150px Arial";
+
+
+  ctx.fillText(
+    text,
+    500,
+    175
+  );
+
+
+  const data =
+    ctx.getImageData(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    ).data;
+
+
+  const points = [];
+
+
+  for (
+    let y = 0;
+    y < canvas.height;
+    y += 4
+  ) {
+
+    for (
+      let x = 0;
+      x < canvas.width;
+      x += 4
+    ) {
+
+      const index =
+        (y *
+          canvas.width +
+          x) *
+        4;
+
+
+      if (
+        data[index + 3] >
+        100
+      ) {
+
+        points.push({
+
+          x:
+            (x - 500) *
+            .65,
+
+          y:
+            -(y - 175) *
+            .65,
+
+          z:
+            (Math.random() - .5) *
+            25,
+
+          color:
+            COLORS.cyan
+
+        });
+
       }
-    }
-  }
-  return pts;
-}
 
-function getHeartPoints() {
-  const pts = [];
-  const scale = Math.min(W, H) * 0.022;
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const t = (i / PARTICLE_COUNT) * Math.PI * 2;
-    const x = 16 * Math.pow(Math.sin(t), 3);
-    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-    pts.push({ x: W / 2 + x * scale, y: H / 2 + y * scale, color: '#ff2a8d' });
-  }
-  return pts;
-}
-
-function getPlanetPoints() {
-  const pts = [];
-  const r = Math.min(W, H) * 0.18;
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    if (i < PARTICLE_COUNT * 0.5) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * r;
-      pts.push({ x: W / 2 + Math.cos(angle) * radius, y: H / 2 + Math.sin(angle) * radius, color: '#ffcc00' });
-    } else {
-      const angle = Math.random() * Math.PI * 2;
-      const rx = (r * 1.8) * Math.cos(angle);
-      const ry = (r * 0.4) * Math.sin(angle);
-      pts.push({ x: W / 2 + rx, y: H / 2 + ry, color: '#ffaa00' });
-    }
-  }
-  return pts;
-}
-
-function getPalestineFlagPoints() {
-  const pts = [];
-  const width = Math.min(W, H) * 0.6;
-  const height = width * 0.5;
-  const startX = (W - width) / 2;
-  const startY = (H - height) / 2;
-
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const px = startX + Math.random() * width;
-    const py = startY + Math.random() * height;
-    let color = '#ffffff';
-
-    // تحديد ألوان علم فلسطين (أسود، أبيض، أخضر، ومثلث أحمر)
-    const relX = px - startX;
-    const relY = py - startY;
-
-    if (relX < (width * 0.35) && relY >= (relX * (height / (width * 0.7))) && relY <= (height - relX * (height / (width * 0.7)))) {
-      color = '#e43137'; // أحمر
-    } else if (relY < height / 3) {
-      color = '#000000'; // أسود
-    } else if (relY < (height * 2) / 3) {
-      color = '#ffffff'; // أبيض
-    } else {
-      color = '#007a3d'; // أخضر
     }
 
-    pts.push({ x: px, y: py, color });
   }
-  return pts;
+
+
+  const result = [];
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const p =
+      points[
+        i % points.length
+      ];
+
+
+    result.push({
+
+      x:
+        p.x +
+        (Math.random() - .5) *
+        2,
+
+      y:
+        p.y +
+        (Math.random() - .5) *
+        2,
+
+      z:
+        p.z,
+
+      color:
+        p.color
+
+    });
+
+  }
+
+
+  return result;
+
 }
 
-function getRandomPoints() {
-  const pts = [];
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    pts.push({ x: Math.random() * W, y: Math.random() * H, color: '#a0a0a0' });
+
+/* =========================================================
+   SET TARGET
+========================================================= */
+
+function setShape(points) {
+
+  if (!points.length)
+    return;
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const p =
+      points[
+        i % points.length
+      ];
+
+
+    const i3 =
+      i * 3;
+
+
+    targetPositions[i3] =
+      p.x;
+
+
+    targetPositions[i3 + 1] =
+      p.y;
+
+
+    targetPositions[i3 + 2] =
+      p.z;
+
+
+    targetColors[i3] =
+      p.color.r;
+
+
+    targetColors[i3 + 1] =
+      p.color.g;
+
+
+    targetColors[i3 + 2] =
+      p.color.b;
+
   }
-  return pts;
+
 }
 
-function setTargets(points) {
-  if (!points || points.length === 0) return;
-  for (let i = 0; i < particles.length; i++) {
-    const p = points[i % points.length];
-    particles[i].tx = p.x;
-    particles[i].ty = p.y;
-    particles[i].color = p.color;
+
+/* =========================================================
+   HAND GESTURES
+========================================================= */
+
+let currentGesture = "";
+
+
+function detectGesture(lm) {
+
+  const indexUp =
+    lm[8].y <
+    lm[6].y;
+
+
+  const middleUp =
+    lm[12].y <
+    lm[10].y;
+
+
+  const ringUp =
+    lm[16].y <
+    lm[14].y;
+
+
+  const pinkyUp =
+    lm[20].y <
+    lm[18].y;
+
+
+  const thumbUp =
+    lm[4].y <
+    lm[3].y;
+
+
+  if (
+    indexUp &&
+    middleUp &&
+    ringUp &&
+    pinkyUp
+  ) {
+
+    return "OPEN";
+
   }
+
+
+  if (
+    indexUp &&
+    middleUp &&
+    !ringUp &&
+    !pinkyUp
+  ) {
+
+    return "VICTORY";
+
+  }
+
+
+  if (
+    indexUp &&
+    !middleUp &&
+    !ringUp &&
+    !pinkyUp
+  ) {
+
+    return "ONE";
+
+  }
+
+
+  if (
+    !indexUp &&
+    !middleUp &&
+    !ringUp &&
+    !pinkyUp
+  ) {
+
+    return "FIST";
+
+  }
+
+
+  if (
+    thumbUp &&
+    !indexUp &&
+    !middleUp
+  ) {
+
+    return "THUMB";
+
+  }
+
+
+  return "UNKNOWN";
+
 }
+
+
+/* =========================================================
+   GESTURE ACTION
+========================================================= */
+
+function changeGesture(gesture) {
+
+  if (
+    gesture ===
+    currentGesture
+  )
+    return;
+
+
+  currentGesture =
+    gesture;
+
+
+  if (
+    gesture ===
+    "OPEN"
+  ) {
+
+    setShape(
+      createRandomUniverse()
+    );
+
+  }
+
+
+  else if (
+    gesture ===
+    "FIST"
+  ) {
+
+    setShape(
+      createHeart()
+    );
+
+  }
+
+
+  else if (
+    gesture ===
+    "ONE"
+  ) {
+
+    setShape(
+      createPlanet()
+    );
+
+  }
+
+
+  else if (
+    gesture ===
+    "VICTORY"
+  ) {
+
+    setShape(
+      createText(
+        "I LOVE YOU"
+      )
+    );
+
+  }
+
+
+  else if (
+    gesture ===
+    "THUMB"
+  ) {
+
+    setShape(
+      createStarShape()
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   MEDIAPIPE
+========================================================= */
+
+function initHands() {
+
+  const hands =
+    new Hands({
+
+      locateFile:
+        file =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+
+    });
+
+
+  hands.setOptions({
+
+    maxNumHands: 1,
+
+    modelComplexity: 1,
+
+    minDetectionConfidence:
+      .65,
+
+    minTrackingConfidence:
+      .65
+
+  });
+
+
+  hands.onResults(
+    results => {
+
+      if (
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length
+      ) {
+
+        const landmarks =
+          results.multiHandLandmarks[0];
+
+
+        const gesture =
+          detectGesture(
+            landmarks
+          );
+
+
+        changeGesture(
+          gesture
+        );
+
+      }
+
+    }
+  );
+
+
+  const camera =
+    new Camera(
+      video,
+      {
+
+        onFrame:
+          async () => {
+
+            await hands.send({
+              image: video
+            });
+
+          },
+
+        width: 640,
+
+        height: 480
+
+      }
+    );
+
+
+  camera.start();
+
+}
+
+
+/* =========================================================
+   BACKGROUND STARS
+========================================================= */
+
+function createStars() {
+
+  const starGeometry =
+    new THREE.BufferGeometry();
+
+
+  const starPositions =
+    new Float32Array(
+      2500 * 3
+    );
+
+
+  for (
+    let i = 0;
+    i < 2500;
+    i++
+  ) {
+
+    const i3 =
+      i * 3;
+
+
+    starPositions[i3] =
+      (Math.random() - .5) *
+      1600;
+
+
+    starPositions[i3 + 1] =
+      (Math.random() - .5) *
+      1000;
+
+
+    starPositions[i3 + 2] =
+      (Math.random() - .5) *
+      1400;
+
+  }
+
+
+  starGeometry.setAttribute(
+    "position",
+
+    new THREE.BufferAttribute(
+      starPositions,
+      3
+    )
+  );
+
+
+  const starMaterial =
+    new THREE.PointsMaterial({
+
+      color: 0x555577,
+
+      size: 1,
+
+      transparent: true,
+
+      opacity: .7
+
+    });
+
+
+  const stars =
+    new THREE.Points(
+      starGeometry,
+      starMaterial
+    );
+
+
+  scene.add(stars);
+
+}
+
+
+/* =========================================================
+   ANIMATION
+========================================================= */
 
 function animate() {
-  pctx.clearRect(0, 0, W, H);
-  for (const p of particles) {
-    p.x += (p.tx - p.x) * 0.08;
-    p.y += (p.ty - p.y) * 0.08;
-    pctx.beginPath();
-    pctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    pctx.fillStyle = p.color;
-    pctx.fill();
+
+  requestAnimationFrame(
+    animate
+  );
+
+
+  const time =
+    clock.getElapsedTime();
+
+
+  const pos =
+    geometry.attributes.position;
+
+
+  const color =
+    geometry.attributes.color;
+
+
+  for (
+    let i = 0;
+    i < PARTICLE_COUNT;
+    i++
+  ) {
+
+    const i3 =
+      i * 3;
+
+
+    positions[i3] +=
+      (
+        targetPositions[i3] -
+        positions[i3]
+      ) * .075;
+
+
+    positions[i3 + 1] +=
+      (
+        targetPositions[i3 + 1] -
+        positions[i3 + 1]
+      ) * .075;
+
+
+    positions[i3 + 2] +=
+      (
+        targetPositions[i3 + 2] -
+        positions[i3 + 2]
+      ) * .075;
+
+
+    particleColors[i3] +=
+      (
+        targetColors[i3] -
+        particleColors[i3]
+      ) * .08;
+
+
+    particleColors[i3 + 1] +=
+      (
+        targetColors[i3 + 1] -
+        particleColors[i3 + 1]
+      ) * .08;
+
+
+    particleColors[i3 + 2] +=
+      (
+        targetColors[i3 + 2] -
+        particleColors[i3 + 2]
+      ) * .08;
+
   }
-  requestAnimationFrame(animate);
-}
-animate();
 
-// 2. تحليل حركة الأصابع عبر الكاميرا
-let currentGesture = '';
 
-function detectGesture(landmarks) {
-  const isIndexUp = landmarks[8].y < landmarks[6].y;
-  const isMiddleUp = landmarks[12].y < landmarks[10].y;
-  const isRingUp = landmarks[16].y < landmarks[14].y;
-  const isPinkyUp = landmarks[20].y < landmarks[18].y;
-  const isThumbUp = landmarks[4].y < landmarks[3].y && landmarks[4].y < landmarks[8].y;
+  pos.needsUpdate = true;
 
-  if (isThumbUp && !isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) return 'THUMB_UP';
-  if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) return 'OPEN_HAND';
-  if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) return 'VICTORY';
-  if (isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) return 'ONE_FINGER';
-  if (!isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) return 'FIST';
+  color.needsUpdate = true;
 
-  return 'UNKNOWN';
-}
 
-function onResults(results) {
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const landmarks = results.multiHandLandmarks[0];
-    const gesture = detectGesture(landmarks);
+  /*
+    دوران 3D
+  */
 
-    if (gesture !== currentGesture) {
-      currentGesture = gesture;
-      if (gesture === 'OPEN_HAND') {
-        statusDiv.innerText = '🖐️ كف مفتوح (تشتت الجسيمات)';
-        setTargets(getRandomPoints());
-      } else if (gesture === 'VICTORY') {
-        statusDiv.innerText = '✌️ علامة النصر (I LOVE YOU)';
-        setTargets(sampleText('I LOVE YOU'));
-      } else if (gesture === 'ONE_FINGER') {
-        statusDiv.innerText = '☝️ إصبع واحد (كوكب زحل)';
-        setTargets(getPlanetPoints());
-      } else if (gesture === 'FIST') {
-        statusDiv.innerText = '✊ قبضة يد (شكل قلب)';
-        setTargets(getHeartPoints());
-      } else if (gesture === 'THUMB_UP') {
-        statusDiv.innerText = '👍 إبهام لأعلى (علم فلسطين)';
-        setTargets(getPalestineFlagPoints());
-      }
-    }
-  } else {
-    statusDiv.innerText = 'ضع يدك أمام الكاميرا...';
-  }
+  particleSystem.rotation.y =
+    Math.sin(
+      time * .25
+    ) * .25;
+
+
+  particleSystem.rotation.x =
+    Math.sin(
+      time * .18
+    ) * .08;
+
+
+  /*
+    نبض خفيف
+  */
+
+  const pulse =
+    1 +
+    Math.sin(
+      time * 1.5
+    ) * .015;
+
+
+  particleSystem.scale.set(
+    pulse,
+    pulse,
+    pulse
+  );
+
+
+  renderer.render(
+    scene,
+    camera
+  );
+
 }
 
-// 3. تشغيل الكاميرا وMediaPipe
-const hands = new Hands({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-});
 
-hands.setOptions({
-  maxNumHands: 1,
-  modelComplexity: 1,
-  minDetectionConfidence: 0.6,
-  minTrackingConfidence: 0.6
-});
+/* =========================================================
+   RESIZE
+========================================================= */
 
-hands.onResults(onResults);
+function onResize() {
 
-const camera = new Camera(videoElement, {
-  onFrame: async () => {
-    await hands.send({ image: videoElement });
-  },
-  width: 640,
-  height: 480
-});
+  camera.aspect =
+    window.innerWidth /
+    window.innerHeight;
 
-camera.start();
+
+  camera.updateProjectionMatrix();
+
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+}
+
+
+/* =========================================================
+   START DIRECTLY
+========================================================= */
+
+initThree();
+
+initHands();
+
 </script>
+
 </body>
 </html>
